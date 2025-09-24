@@ -3,189 +3,263 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Temporizador SCG</title>
+  <title>Temporizador</title>
   <style>
-    :root {
-      --blue-dark: #0d47a1;
-      --blue-mid: #1976d2;
-      --bg-gradient: linear-gradient(135deg, #0d47a1, #1976d2);
-      --white: #fff;
+    :root{
+      --orange:#f08600;
+      --orange-dark:#d97400;
+      --bg: linear-gradient(135deg,#fdf1e6,#fff7ef);
+      --card:#ffffff;
+      --muted:#666;
     }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-      background: var(--bg-gradient);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      color: var(--white);
-    }
-    .topbar {
-      padding: 25px 20px;
-      text-align: center;
-      border-bottom-left-radius: 30px;
-      border-bottom-right-radius: 30px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-    .topbar h1 {
-      font-size: 36px;
-      font-weight: 900;
-      margin: 0;
-      color: white;
-    }
-    .topbar p {
-      margin: 5px 0 0;
-      font-size: 16px;
-      color: #cfd8dc;
-    }
-    .container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-    }
-    .inputs {
-      display: flex;
-      gap: 15px;
-      margin: 20px 0;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .inputs input, .inputs select {
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      font-size: 16px;
-      min-width: 180px;
-    }
-    .timer {
-      font-size: 60px;
-      font-weight: bold;
-      margin: 30px 0;
-      color: lightgreen;
-    }
-    .buttons {
-      margin-bottom: 20px;
-    }
-    button.stop {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      background: red;
-      color: white;
-      transition: 0.3s;
-    }
-    button.stop:hover { opacity: 0.9; transform: translateY(-2px); }
-    .etapas {
-      width: 100%;
-      max-width: 500px;
-    }
-    .etapa {
-      background: rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 15px;
-      margin: 10px 0;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-    .etapa h3 {
-      margin: 0;
-      font-size: 18px;
-      color: #bbdefb;
-    }
-    .footer {
-      text-align: center;
-      padding: 15px;
-      font-size: 14px;
-      color: #cfd8dc;
-      background: rgba(0,0,0,0.3);
-    }
+    body{margin:0;font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:#222;display:flex;flex-direction:column;min-height:100vh;}
+    .topbar{background:var(--orange);color:white;padding:20px 16px;text-align:center;border-bottom-left-radius:18px;border-bottom-right-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,0.08);}
+    .topbar h1{margin:0;font-size:32px;font-weight:900;letter-spacing:1px;}
+    .topbar p{margin:6px 0 0;opacity:0.95;font-weight:500;}
+    .container{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;}
+    .card{background:var(--card);width:100%;max-width:760px;border-radius:14px;padding:20px;margin-top:-30px;box-shadow:0 12px 30px rgba(0,0,0,0.08);}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+    .field{display:flex;flex-direction:column;min-width:160px;flex:1;}
+    .field label{font-size:13px;color:var(--muted);margin-bottom:6px;}
+    .field input, .field select{padding:10px;border-radius:8px;border:1px solid #e6e6e6;font-size:16px;}
+    .timer{font-size:64px;font-weight:800;text-align:center;margin:18px 0;color:green;}
+    .controls{display:flex;gap:12px;justify-content:center;margin-bottom:12px;}
+    button{padding:12px 18px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:15px;}
+    button.stop{background:#d9534f;color:white;}
+    button.concluir{background:var(--orange);color:white;}
+    button.secondary{background:#f0f0f0;color:#333;}
+    .etapas{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+    .etapa{background:#fafafa;border-radius:10px;padding:12px;border:1px solid #eee;}
+    .etapa h4{margin:0 0 6px;color:var(--orange-dark);}
+    .etapa .meta{font-size:13px;color:var(--muted);}
+    .footer{padding:12px;text-align:center;color:var(--muted);font-size:13px;}
+    .saved-note{font-size:13px;color:#2e7d32;margin-top:8px;}
+    .chip{display:inline-block;padding:6px 8px;border-radius:8px;background:#fff4e6;border:1px solid #ffecd1;margin-right:6px;font-weight:700;color:var(--orange-dark);}
   </style>
 </head>
 <body>
   <div class="topbar">
-    <h1>Temporizador SCG</h1>
+    <h1>Temporizador</h1>
     <p>Controle de etapas operacionais</p>
   </div>
 
   <div class="container">
-    <div class="inputs">
-      <input type="number" id="dt" placeholder="Digite a DT" oninput="startOnDT()">
-      <select id="blocos">
-        <option value="1">01 Bloco (Truck)</option>
-        <option value="2">02 Blocos (Carreta)</option>
-        <option value="3">03 Blocos (Carreta)</option>
-        <option value="2">02 Blocos (Sider)</option>
-        <option value="3">03 Blocos (Sider)</option>
-      </select>
-    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:12px;">
+        <div class="field" style="flex:0 0 180px;">
+          <label>DT</label>
+          <input id="dt" type="number" inputmode="numeric" placeholder="Digite a DT" />
+        </div>
 
-    <div class="timer" id="timer">00:00</div>
+        <div class="field" style="flex:0 0 180px;">
+          <label>Data (atual)</label>
+          <input id="data" type="text" readonly />
+        </div>
 
-    <div class="buttons">
-      <button class="stop" onclick="parar()">Parar</button>
-    </div>
+        <div class="field" style="flex:0 0 160px;">
+          <label>Hora (atual)</label>
+          <input id="hora" type="text" readonly />
+        </div>
 
-    <div class="etapas">
-      <div class="etapa"><h3>1ª Etapa: Descarregamento MCE</h3><div id="etapa1"></div></div>
-      <div class="etapa"><h3>2ª Etapa: Carregamento</h3><div id="etapa2"></div></div>
-      <div class="etapa"><h3>3ª Etapa: Enlonamento</h3><div id="etapa3"></div></div>
+        <div class="field" style="flex:0 0 220px;">
+          <label>Quantidade de blocos</label>
+          <select id="blocos">
+            <option value="1">01 Bloco (Truck)</option>
+            <option value="2">02 Blocos (Carreta)</option>
+            <option value="3">03 Blocos (Carreta)</option>
+            <option value="2s">02 Blocos (Sider)</option>
+            <option value="3s">03 Blocos (Sider)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="timer" id="timer">00:00</div>
+
+      <div style="text-align:center;margin-bottom:6px;">
+        <button class="concluir" id="concluirBtn">Concluir Etapa</button>
+        <button class="stop" id="pararBtn">Parar</button>
+      </div>
+
+      <div style="text-align:center;"><span class="chip" id="etapaChip">Etapa 1</span></div>
+
+      <div class="etapas" style="margin-top:12px;">
+        <div class="etapa">
+          <h4>1ª Etapa — Descarregamento MCE</h4>
+          <div id="info1" class="meta">Aguardando...</div>
+        </div>
+        <div class="etapa">
+          <h4>2ª Etapa — Carregamento</h4>
+          <div id="info2" class="meta">Aguardando...</div>
+        </div>
+        <div class="etapa">
+          <h4>3ª Etapa — Enlonamento</h4>
+          <div id="info3" class="meta">Aguardando...</div>
+        </div>
+      </div>
+
+      <div id="savedMsg" class="saved-note" style="display:none;">Dados salvos localmente para esta DT.</div>
     </div>
   </div>
 
-  <div class="footer">© Cebrace — Sistema de Temporizador</div>
+  <div class="footer">© Cebrace — Sistema de Consulta de Giro</div>
 
   <script>
+    // Simple localStorage "database" keyed by DT. Structure:
+    // { dtValue: { dt, blocos, etapas: {1:{timeSec,date,hour},2:...,3:...} } }
+    const STORAGE_KEY = "scg_temporizador_db_v1";
+
+    let db = loadDB();
     let segundos = 0;
     let intervalo = null;
     let etapaAtual = 1;
+    const limitesBase = {1:5*60,2:20*60,3:32*60}; // seconds per block base
 
-    const limitesBase = {1: 5*60, 2: 20*60, 3: 32*60}; // em segundos
+    // Elements
+    const dtEl = document.getElementById("dt");
+    const blocosEl = document.getElementById("blocos");
+    const dataEl = document.getElementById("data");
+    const horaEl = document.getElementById("hora");
+    const timerEl = document.getElementById("timer");
+    const infoEls = {1:document.getElementById("info1"),2:document.getElementById("info2"),3:document.getElementById("info3")};
+    const etapaChip = document.getElementById("etapaChip");
+    const concluirBtn = document.getElementById("concluirBtn");
+    const pararBtn = document.getElementById("pararBtn");
+    const savedMsg = document.getElementById("savedMsg");
 
-    function formatarTempo(segundos) {
-      const min = String(Math.floor(segundos/60)).padStart(2,'0');
-      const sec = String(segundos%60).padStart(2,'0');
-      return `${min}:${sec}`;
+    // Update real-time date/time fields
+    function updateDateTimeFields(){
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2,"0");
+      const month = String(now.getMonth()+1).padStart(2,"0");
+      const year = now.getFullYear();
+      const hh = String(now.getHours()).padStart(2,"0");
+      const mm = String(now.getMinutes()).padStart(2,"0");
+      const ss = String(now.getSeconds()).padStart(2,"0");
+      dataEl.value = `${day}/${month}/${year}`;
+      horaEl.value = `${hh}:${mm}:${ss}`;
+    }
+    setInterval(updateDateTimeFields,1000);
+    updateDateTimeFields();
+
+    // Load DB from localStorage
+    function loadDB(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      }catch(e){ return {}; }
+    }
+    function saveDB(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     }
 
-    function atualizarDisplay() {
-      const timerEl = document.getElementById("timer");
-      timerEl.textContent = formatarTempo(segundos);
-      const blocos = parseInt(document.getElementById("blocos").value);
-      const limite = limitesBase[etapaAtual] * blocos;
-      if(segundos > limite) {
-        timerEl.style.color = "red";
-      } else {
-        timerEl.style.color = "lightgreen";
-      }
-    }
+    // Format time
+    function formatTime(s){ const m=String(Math.floor(s/60)).padStart(2,"0"); const sec=String(s%60).padStart(2,"0"); return `${m}:${sec}`; }
 
-    function iniciar() {
+    // Start timer
+    function iniciar(){
       if(intervalo) return;
-      intervalo = setInterval(() => {
-        segundos++;
-        atualizarDisplay();
-      }, 1000);
+      intervalo = setInterval(()=>{ segundos++; tick(); },1000);
+    }
+    function tick(){
+      timerEl.textContent = formatTime(segundos);
+      const blocoVal = parseInt(getBlocosCount());
+      const limite = limitesBase[etapaAtual] * blocoVal;
+      if(segundos > limite){ timerEl.style.color = "red"; } else { timerEl.style.color = "lightgreen"; }
     }
 
-    function startOnDT() {
-      const dt = document.getElementById("dt").value;
-      if(dt && !intervalo) {
-        segundos = 0;
-        etapaAtual = 1;
-        atualizarDisplay();
-        iniciar();
+    // DT input: auto-start and load data if exists
+    dtEl.addEventListener("input", onDTInput);
+    blocosEl.addEventListener("change", ()=>{ /* recalc limits if needed */ tick(); });
+
+    function onDTInput(){
+      const dt = dtEl.value && dtEl.value.trim();
+      if(!dt) return stopTimer();
+      // reset and load record if exist
+      segundos = 0;
+      etapaAtual = 1;
+      timerEl.style.color = "lightgreen";
+      etapaChip.textContent = "Etapa " + etapaAtual;
+      const rec = db[dt];
+      if(rec){
+        // prefill etapas and jump to next pending etapa
+        for(let i=1;i<=3;i++){
+          if(rec.etapas && rec.etapas[i]){
+            infoEls[i].innerText = `DT: ${dt}\nData: ${rec.etapas[i].date}\nHora: ${rec.etapas[i].hour}\nTempo: ${formatTime(rec.etapas[i].timeSec)}`;
+          } else {
+            infoEls[i].innerText = "Aguardando...";
+          }
+        }
+        // find next pending etapa
+        for(let i=1;i<=3;i++){
+          if(!(rec.etapas && rec.etapas[i])){ etapaAtual = i; break; }
+          if(i===3) etapaAtual = 3;
+        }
+      } else {
+        // clear infos
+        for(let i=1;i<=3;i++) infoEls[i].innerText = "Aguardando...";
       }
+      etapaChip.textContent = "Etapa " + etapaAtual;
+      // set blocos from record if exists
+      if(rec && rec.blocos) { blocosEl.value = rec.blocos; }
+      // start timer automatically for next etapa
+      iniciar();
     }
 
-    function parar() {
+    // Get numeric count of blocs (treat 2s/3s same numeric for timing multiplication)
+    function getBlocosCount(){
+      const v = blocosEl.value;
+      if(v.endsWith("s")) return v.slice(0, -1);
+      return v;
+    }
+
+    // Conclude current etapa: store in db and stop timer for that etapa, keep timer running for next etapa
+    concluirBtn.addEventListener("click", ()=>{
+      const dt = dtEl.value && dtEl.value.trim();
+      if(!dt){ alert("Digite a DT antes de concluir a etapa."); return; }
+      // prepare record
+      if(!db[dt]) db[dt] = {dt:dt, blocos: blocosEl.value, etapas:{}};
+      const now = new Date();
+      const date = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`;
+      const hour = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
+      db[dt].blocos = blocosEl.value;
+      db[dt].etapas[etapaAtual] = { timeSec: segundos, date: date, hour: hour };
+      saveDB();
+      // show saved
+      infoEls[etapaAtual].innerText = `DT: ${dt}\nData: ${date}\nHora: ${hour}\nTempo: ${formatTime(segundos)}`;
+      savedMsg.style.display = "block";
+      setTimeout(()=>{ savedMsg.style.display="none"; },2500);
+      // stop timer for a moment and reset seconds for next etapa, but continue running:
       clearInterval(intervalo);
       intervalo = null;
-      document.getElementById("etapa"+etapaAtual).textContent = "Tempo: " + formatarTempo(segundos);
-    }
+      // advance etapa if not last
+      if(etapaAtual < 3){
+        etapaAtual++;
+        segundos = 0;
+        etapaChip.textContent = "Etapa " + etapaAtual;
+        iniciar();
+      } else {
+        // finished all etapas
+        etapaChip.textContent = "Concluído";
+      }
+    });
+
+    // Parar: stops timer and freezes current etapa display (but doesn't mark as concluded)
+    pararBtn.addEventListener("click", ()=>{
+      const dt = dtEl.value && dtEl.value.trim();
+      clearInterval(intervalo);
+      intervalo = null;
+      if(dt){
+        infoEls[etapaAtual].innerText = `DT: ${dt}\nData: ${dataEl.value}\nHora: ${horaEl.value}\nTempo (parado): ${formatTime(segundos)}`;
+      }
+    });
+
+    // On load: if DT prefilled in URL or localStorage, optionally load (not required)
+    // Expose function to manually stop timer if needed
+    function stopTimer(){ clearInterval(intervalo); intervalo = null; timerEl.textContent = "00:00"; segundos = 0; etapaAtual=1; etapaChip.textContent="Etapa 1"; for(let i=1;i<=3;i++) infoEls[i].innerText="Aguardando..."; }
+
+    // For convenience: if user presses Enter on DT, keep focus and start (already handled by input event)
+    dtEl.addEventListener("keypress",(e)=>{ if(e.key==="Enter") e.preventDefault(); });
+
   </script>
 </body>
 </html>
