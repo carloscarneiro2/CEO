@@ -6,12 +6,10 @@
   <title>Temporizador SCG</title>
   <style>
     :root {
-      --blue: #007BFF;
-      --blue-light: #66b2ff;
-      --bg-gradient: linear-gradient(135deg, #89f7fe, #66a6ff);
+      --blue-dark: #0d47a1;
+      --blue-mid: #1976d2;
+      --bg-gradient: linear-gradient(135deg, #0d47a1, #1976d2);
       --white: #fff;
-      --dark: #333;
-      --muted: #aaa;
     }
     body {
       margin: 0;
@@ -20,15 +18,14 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      color: var(--white);
     }
     .topbar {
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(8px);
       padding: 25px 20px;
       text-align: center;
       border-bottom-left-radius: 30px;
       border-bottom-right-radius: 30px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .topbar h1 {
       font-size: 36px;
@@ -39,15 +36,13 @@
     .topbar p {
       margin: 5px 0 0;
       font-size: 16px;
-      color: var(--white);
-      opacity: 0.8;
+      color: #cfd8dc;
     }
     .container {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
       padding: 20px;
     }
     .inputs {
@@ -60,7 +55,7 @@
     .inputs input, .inputs select {
       padding: 10px;
       border-radius: 8px;
-      border: 1px solid #ccc;
+      border: none;
       font-size: 16px;
       min-width: 180px;
     }
@@ -68,47 +63,45 @@
       font-size: 60px;
       font-weight: bold;
       margin: 30px 0;
-      color: green;
+      color: lightgreen;
     }
     .buttons {
-      display: flex;
-      gap: 12px;
       margin-bottom: 20px;
     }
-    button {
+    button.stop {
       padding: 12px 20px;
       border: none;
       border-radius: 8px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      background: red;
+      color: white;
       transition: 0.3s;
     }
-    button.pause { background: orange; color: white; }
-    button.stop { background: red; color: white; }
-    button:hover { opacity: 0.9; transform: translateY(-2px); }
+    button.stop:hover { opacity: 0.9; transform: translateY(-2px); }
     .etapas {
       width: 100%;
       max-width: 500px;
     }
     .etapa {
-      background: white;
+      background: rgba(255,255,255,0.1);
       border-radius: 12px;
       padding: 15px;
       margin: 10px 0;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     .etapa h3 {
       margin: 0;
       font-size: 18px;
-      color: var(--blue);
+      color: #bbdefb;
     }
     .footer {
       text-align: center;
       padding: 15px;
       font-size: 14px;
-      color: white;
-      background: rgba(0,0,0,0.2);
+      color: #cfd8dc;
+      background: rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -125,15 +118,14 @@
         <option value="1">01 Bloco (Truck)</option>
         <option value="2">02 Blocos (Carreta)</option>
         <option value="3">03 Blocos (Carreta)</option>
-        <option value="2s">02 Blocos (Sider)</option>
-        <option value="3s">03 Blocos (Sider)</option>
+        <option value="2">02 Blocos (Sider)</option>
+        <option value="3">03 Blocos (Sider)</option>
       </select>
     </div>
 
     <div class="timer" id="timer">00:00</div>
 
     <div class="buttons">
-      <button class="pause" onclick="pausar()" id="pauseBtn">Pausar</button>
       <button class="stop" onclick="parar()">Parar</button>
     </div>
 
@@ -150,7 +142,8 @@
     let segundos = 0;
     let intervalo = null;
     let etapaAtual = 1;
-    let pausado = false;
+
+    const limitesBase = {1: 5*60, 2: 20*60, 3: 32*60}; // em segundos
 
     function formatarTempo(segundos) {
       const min = String(Math.floor(segundos/60)).padStart(2,'0');
@@ -159,7 +152,15 @@
     }
 
     function atualizarDisplay() {
-      document.getElementById("timer").textContent = formatarTempo(segundos);
+      const timerEl = document.getElementById("timer");
+      timerEl.textContent = formatarTempo(segundos);
+      const blocos = parseInt(document.getElementById("blocos").value);
+      const limite = limitesBase[etapaAtual] * blocos;
+      if(segundos > limite) {
+        timerEl.style.color = "red";
+      } else {
+        timerEl.style.color = "lightgreen";
+      }
     }
 
     function iniciar() {
@@ -174,21 +175,9 @@
       const dt = document.getElementById("dt").value;
       if(dt && !intervalo) {
         segundos = 0;
+        etapaAtual = 1;
         atualizarDisplay();
         iniciar();
-      }
-    }
-
-    function pausar() {
-      if(pausado) {
-        iniciar();
-        document.getElementById("pauseBtn").textContent = "Pausar";
-        pausado = false;
-      } else {
-        clearInterval(intervalo);
-        intervalo = null;
-        document.getElementById("pauseBtn").textContent = "Retomar";
-        pausado = true;
       }
     }
 
