@@ -54,7 +54,7 @@
       <div class="row" style="margin-bottom:12px;">
         <div class="field" style="flex:0 0 180px;">
           <label>DT</label>
-          <input id="dt" type="number" inputmode="numeric" placeholder="Digite a DT (11 dígitos)" />
+          <input id="dt" type="number" inputmode="numeric" placeholder="Digite a DT (10 dígitos)" />
         </div>
         <div class="field" style="flex:0 0 180px;">
           <label>Data (atual)</label>
@@ -118,7 +118,7 @@
     dtEl.addEventListener("input",onDTInput);
     function onDTInput(){
       const dt=dtEl.value.trim();
-      if(dt.length!==11)return; // só inicia se tiver 11 dígitos
+      if(dt.length!==10)return; // agora exige 10 dígitos
       segundos=0;etapaAtual=1;stopTimer();inicioEtapa=null;
       timerEl.textContent="00:00";timerEl.style.color="green";
       const rec=db[dt];
@@ -141,7 +141,7 @@
 
     concluirBtn.addEventListener("click",()=>{
       const dt=dtEl.value.trim();
-      if(dt.length!==11)return alert("DT deve ter 11 dígitos.");
+      if(dt.length!==10)return alert("DT deve ter 10 dígitos.");
       if(!db[dt])db[dt]={dt:dt,blocos:blocosEl.value,etapas:{}};
       const now=new Date();
       const end=now.toLocaleTimeString();
