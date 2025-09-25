@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Temporizador</title>
+  <title>Controle de Etapas Operacionais</title>
   <style>
     :root{
       --orange-light:#f9a825;
@@ -14,15 +14,16 @@
     }
     body{margin:0;font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:#222;display:flex;flex-direction:column;min-height:100vh;}
     .topbar{
-      background:linear-gradient(135deg,var(--orange-light),var(--orange-dark));
-      color:white;padding:20px 16px;text-align:center;
+      text-align:center;
+      background:#fff;
+      padding:0;
       border-bottom-left-radius:18px;border-bottom-right-radius:18px;
       box-shadow:0 6px 18px rgba(0,0,0,0.1);
     }
-    .topbar h1{margin:0;font-size:32px;font-weight:900;letter-spacing:1px;}
-    .topbar p{margin:6px 0 0;opacity:0.95;font-weight:500;}
+    .topbar img{width:100%;max-height:220px;object-fit:cover;border-bottom-left-radius:18px;border-bottom-right-radius:18px;}
+    .topbar p{margin:10px 0;font-size:18px;font-weight:600;color:var(--orange-dark);}
     .container{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;}
-    .card{background:var(--card);width:100%;max-width:800px;border-radius:14px;padding:20px;margin-top:-30px;box-shadow:0 12px 30px rgba(0,0,0,0.08);}
+    .card{background:var(--card);width:100%;max-width:800px;border-radius:14px;padding:20px;margin-top:-20px;box-shadow:0 12px 30px rgba(0,0,0,0.08);}
     .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
     .field{display:flex;flex-direction:column;min-width:160px;flex:1;}
     .field label{font-size:13px;color:var(--muted);margin-bottom:6px;}
@@ -45,8 +46,8 @@
 </head>
 <body>
   <div class="topbar">
-    <h1>Temporizador</h1>
-    <p>Controle de etapas operacionais</p>
+    <img src="38EEF5CE-6D2A-4BEB-80BD-17CC11970BDF.jpeg" alt="Cebrace Caminhão" />
+    <p>Controle de Etapas Operacionais</p>
   </div>
 
   <div class="container">
@@ -118,7 +119,7 @@
     dtEl.addEventListener("input",onDTInput);
     function onDTInput(){
       const dt=dtEl.value.trim();
-      if(dt.length!==10)return; // agora exige 10 dígitos
+      if(dt.length!==10)return; // exige 10 dígitos
       segundos=0;etapaAtual=1;stopTimer();inicioEtapa=null;
       timerEl.textContent="00:00";timerEl.style.color="green";
       const rec=db[dt];
