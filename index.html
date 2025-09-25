@@ -6,25 +6,35 @@
   <title>Temporizador</title>
   <style>
     :root{
-      --orange:#f08600;
-      --orange-dark:#d97400;
+      --orange-light:#f9a825;
+      --orange-dark:#ef6c00;
       --bg: linear-gradient(135deg,#fdf1e6,#fff7ef);
       --card:#ffffff;
       --muted:#666;
     }
     body{margin:0;font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:#222;display:flex;flex-direction:column;min-height:100vh;}
-    .topbar{background:var(--orange);color:white;padding:20px 16px;text-align:center;border-bottom-left-radius:18px;border-bottom-right-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,0.08);}
+    .topbar{
+      background:linear-gradient(135deg,var(--orange-light),var(--orange-dark));
+      color:white;padding:20px 16px;text-align:center;
+      border-bottom-left-radius:18px;border-bottom-right-radius:18px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.1);
+    }
     .topbar h1{margin:0;font-size:32px;font-weight:900;letter-spacing:1px;}
     .topbar p{margin:6px 0 0;opacity:0.95;font-weight:500;}
     .container{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;}
-    .card{background:var(--card);width:100%;max-width:760px;border-radius:14px;padding:20px;margin-top:-30px;box-shadow:0 12px 30px rgba(0,0,0,0.08);}
+    .card{background:var(--card);width:100%;max-width:800px;border-radius:14px;padding:20px;margin-top:-30px;box-shadow:0 12px 30px rgba(0,0,0,0.08);}
     .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
     .field{display:flex;flex-direction:column;min-width:160px;flex:1;}
     .field label{font-size:13px;color:var(--muted);margin-bottom:6px;}
     .field input, .field select{padding:10px;border-radius:8px;border:1px solid #e6e6e6;font-size:16px;}
     .timer{font-size:64px;font-weight:800;text-align:center;margin:18px 0;color:green;}
-    button{padding:12px 18px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:15px;}
-    button.concluir{background:var(--orange);color:white;}
+    button{
+      padding:12px 18px;border-radius:10px;border:none;font-weight:700;
+      cursor:pointer;font-size:15px;
+      background:linear-gradient(135deg,var(--orange-light),var(--orange-dark));
+      color:white;transition:opacity 0.2s;
+    }
+    button:hover{opacity:0.9;}
     .etapas{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
     .etapa{background:#fafafa;border-radius:10px;padding:12px;border:1px solid #eee;}
     .etapa h4{margin:0 0 6px;color:var(--orange-dark);}
@@ -44,7 +54,7 @@
       <div class="row" style="margin-bottom:12px;">
         <div class="field" style="flex:0 0 180px;">
           <label>DT</label>
-          <input id="dt" type="number" inputmode="numeric" placeholder="Digite a DT" />
+          <input id="dt" type="number" inputmode="numeric" placeholder="Digite a DT (11 dígitos)" />
         </div>
         <div class="field" style="flex:0 0 180px;">
           <label>Data (atual)</label>
@@ -68,7 +78,8 @@
 
       <div class="timer" id="timer">00:00</div>
       <div style="text-align:center;margin-bottom:6px;">
-        <button class="concluir" id="concluirBtn">Concluir Etapa</button>
+        <button id="concluirBtn">Concluir Etapa</button>
+        <button id="exportBtn">Exportar para Excel</button>
       </div>
       <div style="text-align:center;"><span class="chip" id="etapaChip">Etapa 1</span></div>
 
@@ -80,10 +91,11 @@
     </div>
   </div>
 
-  <div class="footer">© Cebrace — Sistema de Consulta de Giro</div>
+  <div class="footer">© Cebrace — Controle de etapas operacionais</div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script>
-    const STORAGE_KEY = "scg_temporizador_db_v2";
+    const STORAGE_KEY = "scg_temporizador_db_v3";
     let db = loadDB();
     let segundos=0, intervalo=null, etapaAtual=1, inicioEtapa=null;
 
@@ -91,7 +103,7 @@
     const dtEl=document.getElementById("dt"), blocosEl=document.getElementById("blocos");
     const dataEl=document.getElementById("data"), horaEl=document.getElementById("hora"), timerEl=document.getElementById("timer");
     const infoEls={1:document.getElementById("info1"),2:document.getElementById("info2"),3:document.getElementById("info3")};
-    const etapaChip=document.getElementById("etapaChip"), concluirBtn=document.getElementById("concluirBtn");
+    const etapaChip=document.getElementById("etapaChip"), concluirBtn=document.getElementById("concluirBtn"), exportBtn=document.getElementById("exportBtn");
 
     function updateDateTime(){const now=new Date();dataEl.value=now.toLocaleDateString();horaEl.value=now.toLocaleTimeString();}
     setInterval(updateDateTime,1000);updateDateTime();
@@ -106,7 +118,7 @@
     dtEl.addEventListener("input",onDTInput);
     function onDTInput(){
       const dt=dtEl.value.trim();
-      if(!dt)return;
+      if(dt.length!==11)return; // só inicia se tiver 11 dígitos
       segundos=0;etapaAtual=1;stopTimer();inicioEtapa=null;
       timerEl.textContent="00:00";timerEl.style.color="green";
       const rec=db[dt];
@@ -129,7 +141,7 @@
 
     concluirBtn.addEventListener("click",()=>{
       const dt=dtEl.value.trim();
-      if(!dt)return alert("Digite a DT");
+      if(dt.length!==11)return alert("DT deve ter 11 dígitos.");
       if(!db[dt])db[dt]={dt:dt,blocos:blocosEl.value,etapas:{}};
       const now=new Date();
       const end=now.toLocaleTimeString();
@@ -140,6 +152,23 @@
       infoEls[etapaAtual].innerText=`Início: ${start}\nFim: ${end}\nTempo: ${formatTime(segundos)}`;
       stopTimer();
       if(etapaAtual<3){etapaAtual++;etapaChip.textContent="Etapa "+etapaAtual;} else {etapaChip.textContent="Concluído";}
+    });
+
+    exportBtn.addEventListener("click",()=>{
+      let rows=[["DT","Blocos","Etapa","Início","Fim","Tempo"]];
+      for(const dt in db){
+        const rec=db[dt];
+        for(let i=1;i<=3;i++){
+          if(rec.etapas&&rec.etapas[i]){
+            const et=rec.etapas[i];
+            rows.push([dt,rec.blocos,i,et.start,et.end,formatTime(et.timeSec)]);
+          }
+        }
+      }
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,"Dados");
+      XLSX.writeFile(wb,"dados.xlsx");
     });
   </script>
 </body>
