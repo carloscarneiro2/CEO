@@ -23,17 +23,13 @@
     .field label{font-size:13px;color:var(--muted);margin-bottom:6px;}
     .field input, .field select{padding:10px;border-radius:8px;border:1px solid #e6e6e6;font-size:16px;}
     .timer{font-size:64px;font-weight:800;text-align:center;margin:18px 0;color:green;}
-    .controls{display:flex;gap:12px;justify-content:center;margin-bottom:12px;}
     button{padding:12px 18px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:15px;}
-    button.stop{background:#d9534f;color:white;}
     button.concluir{background:var(--orange);color:white;}
-    button.secondary{background:#f0f0f0;color:#333;}
     .etapas{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
     .etapa{background:#fafafa;border-radius:10px;padding:12px;border:1px solid #eee;}
     .etapa h4{margin:0 0 6px;color:var(--orange-dark);}
-    .etapa .meta{font-size:13px;color:var(--muted);}
+    .etapa .meta{font-size:13px;color:var(--muted);white-space:pre-line;}
     .footer{padding:12px;text-align:center;color:var(--muted);font-size:13px;}
-    .saved-note{font-size:13px;color:#2e7d32;margin-top:8px;}
     .chip{display:inline-block;padding:6px 8px;border-radius:8px;background:#fff4e6;border:1px solid #ffecd1;margin-right:6px;font-weight:700;color:var(--orange-dark);}
   </style>
 </head>
@@ -50,17 +46,14 @@
           <label>DT</label>
           <input id="dt" type="number" inputmode="numeric" placeholder="Digite a DT" />
         </div>
-
         <div class="field" style="flex:0 0 180px;">
           <label>Data (atual)</label>
           <input id="data" type="text" readonly />
         </div>
-
         <div class="field" style="flex:0 0 160px;">
           <label>Hora (atual)</label>
           <input id="hora" type="text" readonly />
         </div>
-
         <div class="field" style="flex:0 0 220px;">
           <label>Quantidade de blocos</label>
           <select id="blocos">
@@ -74,192 +67,80 @@
       </div>
 
       <div class="timer" id="timer">00:00</div>
-
       <div style="text-align:center;margin-bottom:6px;">
         <button class="concluir" id="concluirBtn">Concluir Etapa</button>
-        <button class="stop" id="pararBtn">Parar</button>
       </div>
-
       <div style="text-align:center;"><span class="chip" id="etapaChip">Etapa 1</span></div>
 
       <div class="etapas" style="margin-top:12px;">
-        <div class="etapa">
-          <h4>1ª Etapa — Descarregamento MCE</h4>
-          <div id="info1" class="meta">Aguardando...</div>
-        </div>
-        <div class="etapa">
-          <h4>2ª Etapa — Carregamento</h4>
-          <div id="info2" class="meta">Aguardando...</div>
-        </div>
-        <div class="etapa">
-          <h4>3ª Etapa — Enlonamento</h4>
-          <div id="info3" class="meta">Aguardando...</div>
-        </div>
+        <div class="etapa"><h4>1ª Etapa — Descarregamento MCE</h4><div id="info1" class="meta">Aguardando...</div></div>
+        <div class="etapa"><h4>2ª Etapa — Carregamento</h4><div id="info2" class="meta">Aguardando...</div></div>
+        <div class="etapa"><h4>3ª Etapa — Enlonamento</h4><div id="info3" class="meta">Aguardando...</div></div>
       </div>
-
-      <div id="savedMsg" class="saved-note" style="display:none;">Dados salvos localmente para esta DT.</div>
     </div>
   </div>
 
   <div class="footer">© Cebrace — Sistema de Consulta de Giro</div>
 
   <script>
-    // Simple localStorage "database" keyed by DT. Structure:
-    // { dtValue: { dt, blocos, etapas: {1:{timeSec,date,hour},2:...,3:...} } }
-    const STORAGE_KEY = "scg_temporizador_db_v1";
-
+    const STORAGE_KEY = "scg_temporizador_db_v2";
     let db = loadDB();
-    let segundos = 0;
-    let intervalo = null;
-    let etapaAtual = 1;
-    const limitesBase = {1:5*60,2:20*60,3:32*60}; // seconds per block base
+    let segundos=0, intervalo=null, etapaAtual=1, inicioEtapa=null;
 
-    // Elements
-    const dtEl = document.getElementById("dt");
-    const blocosEl = document.getElementById("blocos");
-    const dataEl = document.getElementById("data");
-    const horaEl = document.getElementById("hora");
-    const timerEl = document.getElementById("timer");
-    const infoEls = {1:document.getElementById("info1"),2:document.getElementById("info2"),3:document.getElementById("info3")};
-    const etapaChip = document.getElementById("etapaChip");
-    const concluirBtn = document.getElementById("concluirBtn");
-    const pararBtn = document.getElementById("pararBtn");
-    const savedMsg = document.getElementById("savedMsg");
+    const limitesBase = {1:5*60,2:20*60,3:32*60};
+    const dtEl=document.getElementById("dt"), blocosEl=document.getElementById("blocos");
+    const dataEl=document.getElementById("data"), horaEl=document.getElementById("hora"), timerEl=document.getElementById("timer");
+    const infoEls={1:document.getElementById("info1"),2:document.getElementById("info2"),3:document.getElementById("info3")};
+    const etapaChip=document.getElementById("etapaChip"), concluirBtn=document.getElementById("concluirBtn");
 
-    // Update real-time date/time fields
-    function updateDateTimeFields(){
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2,"0");
-      const month = String(now.getMonth()+1).padStart(2,"0");
-      const year = now.getFullYear();
-      const hh = String(now.getHours()).padStart(2,"0");
-      const mm = String(now.getMinutes()).padStart(2,"0");
-      const ss = String(now.getSeconds()).padStart(2,"0");
-      dataEl.value = `${day}/${month}/${year}`;
-      horaEl.value = `${hh}:${mm}:${ss}`;
-    }
-    setInterval(updateDateTimeFields,1000);
-    updateDateTimeFields();
+    function updateDateTime(){const now=new Date();dataEl.value=now.toLocaleDateString();horaEl.value=now.toLocaleTimeString();}
+    setInterval(updateDateTime,1000);updateDateTime();
+    function loadDB(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{};}catch(e){return{};}}
+    function saveDB(){localStorage.setItem(STORAGE_KEY,JSON.stringify(db));}
+    function formatTime(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
+    function tick(){timerEl.textContent=formatTime(segundos);const blocos=parseInt(getBlocosCount());const limite=limitesBase[etapaAtual]*blocos;timerEl.style.color=segundos>limite?"red":"green";}
+    function iniciar(){if(intervalo)return;inicioEtapa=new Date();intervalo=setInterval(()=>{segundos++;tick();},1000);}
+    function stopTimer(){clearInterval(intervalo);intervalo=null;}
+    function getBlocosCount(){let v=blocosEl.value;if(v.endsWith("s"))v=v.slice(0,-1);return v;}
 
-    // Load DB from localStorage
-    function loadDB(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : {};
-      }catch(e){ return {}; }
-    }
-    function saveDB(){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-    }
-
-    // Format time
-    function formatTime(s){ const m=String(Math.floor(s/60)).padStart(2,"0"); const sec=String(s%60).padStart(2,"0"); return `${m}:${sec}`; }
-
-    // Start timer
-    function iniciar(){
-      if(intervalo) return;
-      intervalo = setInterval(()=>{ segundos++; tick(); },1000);
-    }
-    function tick(){
-      timerEl.textContent = formatTime(segundos);
-      const blocoVal = parseInt(getBlocosCount());
-      const limite = limitesBase[etapaAtual] * blocoVal;
-      if(segundos > limite){ timerEl.style.color = "red"; } else { timerEl.style.color = "lightgreen"; }
-    }
-
-    // DT input: auto-start and load data if exists
-    dtEl.addEventListener("input", onDTInput);
-    blocosEl.addEventListener("change", ()=>{ /* recalc limits if needed */ tick(); });
-
+    dtEl.addEventListener("input",onDTInput);
     function onDTInput(){
-      const dt = dtEl.value && dtEl.value.trim();
-      if(!dt) return stopTimer();
-      // reset and load record if exist
-      segundos = 0;
-      etapaAtual = 1;
-      timerEl.style.color = "lightgreen";
-      etapaChip.textContent = "Etapa " + etapaAtual;
-      const rec = db[dt];
+      const dt=dtEl.value.trim();
+      if(!dt)return;
+      segundos=0;etapaAtual=1;stopTimer();inicioEtapa=null;
+      timerEl.textContent="00:00";timerEl.style.color="green";
+      const rec=db[dt];
       if(rec){
-        // prefill etapas and jump to next pending etapa
+        blocosEl.value=rec.blocos;
         for(let i=1;i<=3;i++){
-          if(rec.etapas && rec.etapas[i]){
-            infoEls[i].innerText = `DT: ${dt}\nData: ${rec.etapas[i].date}\nHora: ${rec.etapas[i].hour}\nTempo: ${formatTime(rec.etapas[i].timeSec)}`;
-          } else {
-            infoEls[i].innerText = "Aguardando...";
-          }
+          if(rec.etapas&&rec.etapas[i]){
+            const et=rec.etapas[i];
+            infoEls[i].innerText=`Início: ${et.start}\nFim: ${et.end}\nTempo: ${formatTime(et.timeSec)}`;
+          } else { infoEls[i].innerText="Aguardando..."; }
         }
-        // find next pending etapa
         for(let i=1;i<=3;i++){
-          if(!(rec.etapas && rec.etapas[i])){ etapaAtual = i; break; }
-          if(i===3) etapaAtual = 3;
+          if(!(rec.etapas&&rec.etapas[i])){etapaAtual=i;break;}
+          if(i===3)etapaAtual=3;
         }
-      } else {
-        // clear infos
-        for(let i=1;i<=3;i++) infoEls[i].innerText = "Aguardando...";
-      }
-      etapaChip.textContent = "Etapa " + etapaAtual;
-      // set blocos from record if exists
-      if(rec && rec.blocos) { blocosEl.value = rec.blocos; }
-      // start timer automatically for next etapa
+      } else { for(let i=1;i<=3;i++) infoEls[i].innerText="Aguardando..."; }
+      etapaChip.textContent="Etapa "+etapaAtual;
       iniciar();
     }
 
-    // Get numeric count of blocs (treat 2s/3s same numeric for timing multiplication)
-    function getBlocosCount(){
-      const v = blocosEl.value;
-      if(v.endsWith("s")) return v.slice(0, -1);
-      return v;
-    }
-
-    // Conclude current etapa: store in db and stop timer for that etapa, keep timer running for next etapa
-    concluirBtn.addEventListener("click", ()=>{
-      const dt = dtEl.value && dtEl.value.trim();
-      if(!dt){ alert("Digite a DT antes de concluir a etapa."); return; }
-      // prepare record
-      if(!db[dt]) db[dt] = {dt:dt, blocos: blocosEl.value, etapas:{}};
-      const now = new Date();
-      const date = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`;
-      const hour = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
-      db[dt].blocos = blocosEl.value;
-      db[dt].etapas[etapaAtual] = { timeSec: segundos, date: date, hour: hour };
+    concluirBtn.addEventListener("click",()=>{
+      const dt=dtEl.value.trim();
+      if(!dt)return alert("Digite a DT");
+      if(!db[dt])db[dt]={dt:dt,blocos:blocosEl.value,etapas:{}};
+      const now=new Date();
+      const end=now.toLocaleTimeString();
+      const start=inicioEtapa?inicioEtapa.toLocaleTimeString():horaEl.value;
+      db[dt].blocos=blocosEl.value;
+      db[dt].etapas[etapaAtual]={timeSec:segundos,start:start,end:end};
       saveDB();
-      // show saved
-      infoEls[etapaAtual].innerText = `DT: ${dt}\nData: ${date}\nHora: ${hour}\nTempo: ${formatTime(segundos)}`;
-      savedMsg.style.display = "block";
-      setTimeout(()=>{ savedMsg.style.display="none"; },2500);
-      // stop timer for a moment and reset seconds for next etapa, but continue running:
-      clearInterval(intervalo);
-      intervalo = null;
-      // advance etapa if not last
-      if(etapaAtual < 3){
-        etapaAtual++;
-        segundos = 0;
-        etapaChip.textContent = "Etapa " + etapaAtual;
-        iniciar();
-      } else {
-        // finished all etapas
-        etapaChip.textContent = "Concluído";
-      }
+      infoEls[etapaAtual].innerText=`Início: ${start}\nFim: ${end}\nTempo: ${formatTime(segundos)}`;
+      stopTimer();
+      if(etapaAtual<3){etapaAtual++;etapaChip.textContent="Etapa "+etapaAtual;} else {etapaChip.textContent="Concluído";}
     });
-
-    // Parar: stops timer and freezes current etapa display (but doesn't mark as concluded)
-    pararBtn.addEventListener("click", ()=>{
-      const dt = dtEl.value && dtEl.value.trim();
-      clearInterval(intervalo);
-      intervalo = null;
-      if(dt){
-        infoEls[etapaAtual].innerText = `DT: ${dt}\nData: ${dataEl.value}\nHora: ${horaEl.value}\nTempo (parado): ${formatTime(segundos)}`;
-      }
-    });
-
-    // On load: if DT prefilled in URL or localStorage, optionally load (not required)
-    // Expose function to manually stop timer if needed
-    function stopTimer(){ clearInterval(intervalo); intervalo = null; timerEl.textContent = "00:00"; segundos = 0; etapaAtual=1; etapaChip.textContent="Etapa 1"; for(let i=1;i<=3;i++) infoEls[i].innerText="Aguardando..."; }
-
-    // For convenience: if user presses Enter on DT, keep focus and start (already handled by input event)
-    dtEl.addEventListener("keypress",(e)=>{ if(e.key==="Enter") e.preventDefault(); });
-
   </script>
 </body>
 </html>
