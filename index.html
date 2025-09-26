@@ -46,7 +46,7 @@
 </head>
 <body>
   <div class="topbar">
-    <img src="IMG_5935.jpeg" alt="Cebrace Caminhão" />
+    <img src="caf0825f-4978-4c74-8b58-10b4fd1b2f48.jpeg" alt="Cebrace Caminhão" />
     <p>Controle de Etapas Operacionais</p>
   </div>
 
@@ -71,6 +71,7 @@
             <option value="1">01 Bloco (Truck)</option>
             <option value="2">02 Blocos (Carreta)</option>
             <option value="3">03 Blocos (Carreta)</option>
+            <option value="1s">01 Bloco (Sider)</option>
             <option value="2s">02 Blocos (Sider)</option>
             <option value="3s">03 Blocos (Sider)</option>
           </select>
@@ -96,7 +97,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script>
-    const STORAGE_KEY = "scg_temporizador_db_v6";
+    const STORAGE_KEY = "scg_temporizador_db_v7";
     let db = loadDB();
     let segundos=0, intervalo=null, etapaAtual=1, inicioEtapa=null;
 
@@ -149,14 +150,14 @@
       const end=now.toLocaleTimeString();
       const start=inicioEtapa?inicioEtapa.toLocaleTimeString():horaEl.value;
       db[dt].blocos=blocosEl.value;
-      db[dt].etapas[etapaAtual]={timeSec:segundos,start:start,end:end};
+      db[dt].etapas[etapaAtual]={timeSec:segundos,start:start,end=end};
       saveDB();
       infoEls[etapaAtual].innerText=`Início: ${start}\nFim: ${end}\nTempo: ${formatTime(segundos)}`;
       stopTimer();
       if(etapaAtual<3){
         etapaAtual++;
         etapaChip.textContent="Etapa "+etapaAtual;
-        dtEl.removeAttribute("readonly"); // libera edição para próxima DT na próxima etapa
+        dtEl.removeAttribute("readonly"); // libera edição para próxima DT
       } else {
         etapaChip.textContent="Concluído";
         dtEl.removeAttribute("readonly"); // libera após finalizar todas
