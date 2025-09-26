@@ -46,7 +46,7 @@
 </head>
 <body>
   <div class="topbar">
-    <img src="38EEF5CE-6D2A-4BEB-80BD-17CC11970BDF.jpeg" alt="Cebrace Caminhão" />
+    <img src="IMG_5935.jpeg" alt="Cebrace Caminhão" />
     <p>Controle de Etapas Operacionais</p>
   </div>
 
@@ -96,7 +96,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script>
-    const STORAGE_KEY = "scg_temporizador_db_v3";
+    const STORAGE_KEY = "scg_temporizador_db_v6";
     let db = loadDB();
     let segundos=0, intervalo=null, etapaAtual=1, inicioEtapa=null;
 
@@ -120,6 +120,7 @@
     function onDTInput(){
       const dt=dtEl.value.trim();
       if(dt.length!==10)return; // exige 10 dígitos
+      dtEl.setAttribute("readonly", true); // bloqueia edição após 10 dígitos
       segundos=0;etapaAtual=1;stopTimer();inicioEtapa=null;
       timerEl.textContent="00:00";timerEl.style.color="green";
       const rec=db[dt];
@@ -152,7 +153,14 @@
       saveDB();
       infoEls[etapaAtual].innerText=`Início: ${start}\nFim: ${end}\nTempo: ${formatTime(segundos)}`;
       stopTimer();
-      if(etapaAtual<3){etapaAtual++;etapaChip.textContent="Etapa "+etapaAtual;} else {etapaChip.textContent="Concluído";}
+      if(etapaAtual<3){
+        etapaAtual++;
+        etapaChip.textContent="Etapa "+etapaAtual;
+        dtEl.removeAttribute("readonly"); // libera edição para próxima DT na próxima etapa
+      } else {
+        etapaChip.textContent="Concluído";
+        dtEl.removeAttribute("readonly"); // libera após finalizar todas
+      }
     });
 
     exportBtn.addEventListener("click",()=>{
