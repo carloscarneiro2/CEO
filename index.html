@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Controle de Etapas Operacionais</title>
+  <style>
+    :root{
+      --orange-light:#f9a825;
+      --orange-dark:#ef6c00;
+      --bg: linear-gradient(135deg,#fdf1e6,#fff7ef);
+      --card:#ffffff;
+      --muted:#666;
+    }
+    body{margin:0;font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:#222;display:flex;flex-direction:column;min-height:100vh;}
+    .topbar{
+      text-align:center;
+      background:#fff;
+      padding:0;
+      border-bottom-left-radius:18px;border-bottom-right-radius:18px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.1);
+    }
+    .topbar img{width:100%;max-height:220px;object-fit:cover;border-bottom-left-radius:18px;border-bottom-right-radius:18px;}
+    .topbar p{margin:10px 0;font-size:18px;font-weight:600;color:var(--orange-dark);}
+    .container{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;}
+    .card{background:var(--card);width:100%;max-width:800px;border-radius:14px;padding:20px;margin-top:-20px;box-shadow:0 12px 30px rgba(0,0,0,0.08);}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+    .field{display:flex;flex-direction:column;min-width:160px;flex:1;}
+    .field label{font-size:13px;color:var(--muted);margin-bottom:6px;}
+    .field input, .field select{padding:10px;border-radius:8px;border:1px solid #e6e6e6;font-size:16px;}
+    .timer{font-size:64px;font-weight:800;text-align:center;margin:18px 0;color:green;}
+    button{
+      padding:12px 18px;border-radius:10px;border:none;font-weight:700;
+      cursor:pointer;font-size:15px;
+      background:linear-gradient(135deg,var(--orange-light),var(--orange-dark));
+      color:white;transition:opacity 0.2s;
+    }
+    button:hover{opacity:0.9;}
+    .etapas{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+    .etapa{background:#fafafa;border-radius:10px;padding:12px;border:1px solid #eee;}
+    .etapa h4{margin:0 0 6px;color:var(--orange-dark);}
+    .etapa .meta{font-size:13px;color:var(--muted);white-space:pre-line;}
+    .footer{padding:12px;text-align:center;color:var(--muted);font-size:13px;}
+    .chip{display:inline-block;padding:6px 8px;border-radius:8px;background:#fff4e6;border:1px solid #ffecd1;margin-right:6px;font-weight:700;color:var(--orange-dark);}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <img src="caf0825f-4978-4c74-8b58-10b4fd1b2f48.jpeg" alt="Cebrace Caminhão" />
+    <p>Controle de Etapas Operacionais</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="row" style="margin-bottom:12px;">
+        <div class="field" style="flex:0 0 180px;">
+          <label>DT</label>
+          <input id="dt" type="number" inputmode="numeric" placeholder="Digite a DT (10 dígitos)" />
+        </div>
+        <div class="field" style="flex:0 0 180px;">
+          <label>Data (atual)</label>
+          <input id="data" type="text" readonly />
+        </div>
+        <div class="field" style="flex:0 0 160px;">
+          <label>Hora (atual)</label>
+          <input id="hora" type="text" readonly />
+        </div>
+        <div class="field" style="flex:0 0 220px;">
+          <label>Quantidade de blocos</label>
+          <select id="blocos">
+            <option value="1">01 Bloco (Truck)</option>
+            <option value="2">02 Blocos (Carreta)</option>
+            <option value="3">03 Blocos (Carreta)</option>
+            <option value="1s">01 Bloco (Sider)</option>
+            <option value="2s">02 Blocos (Sider)</option>
+            <option value="3s">03 Blocos (Sider)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="timer" id="timer">00:00</div>
+      <div style="text-align:center;margin-bottom:6px;">
+        <button id="concluirBtn">Concluir Etapa</button>
+        <button id="exportBtn">Exportar para Excel</button>
+      </div>
+      <div style="text-align:center;"><span class="chip" id="etapaChip">Etapa 1</span></div>
+
+      <div class="etapas" style="margin-top:12px;">
+        <div class="etapa"><h4>1ª Etapa — Descarregamento MCE</h4><div id="info1" class="meta">Aguardando...</div></div>
+        <div class="etapa"><h4>2ª Etapa — Carregamento</h4><div id="info2" class="meta">Aguardando...</div></div>
+        <div class="etapa"><h4>3ª Etapa — Enlonamento</h4><div id="info3" class="meta">Aguardando...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">© Cebrace — Controle de etapas operacionais</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script>
+    const STORAGE_KEY = "scg_temporizador_db_v7";
+    let db = loadDB();
+    let segundos=0, intervalo=null, etapaAtual=1, inicioEtapa=null;
+
+    const limitesBase = {1:5*60,2:20*60,3:32*60};
+    const dtEl=document.getElementById("dt"), blocosEl=document.getElementById("blocos");
+    const dataEl=document.getElementById("data"), horaEl=document.getElementById("hora"), timerEl=document.getElementById("timer");
+    const infoEls={1:document.getElementById("info1"),2:document.getElementById("info2"),3:document.getElementById("info3")};
+    const etapaChip=document.getElementById("etapaChip"), concluirBtn=document.getElementById("concluirBtn"), exportBtn=document.getElementById("exportBtn");
+
+    function updateDateTime(){const now=new Date();dataEl.value=now.toLocaleDateString();horaEl.value=now.toLocaleTimeString();}
+    setInterval(updateDateTime,1000);updateDateTime();
+    function loadDB(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{};}catch(e){return{};}}
+    function saveDB(){localStorage.setItem(STORAGE_KEY,JSON.stringify(db));}
+    function formatTime(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
+    function tick(){timerEl.textContent=formatTime(segundos);const blocos=parseInt(getBlocosCount());const limite=limitesBase[etapaAtual]*blocos;timerEl.style.color=segundos>limite?"red":"green";}
+    function iniciar(){if(intervalo)return;inicioEtapa=new Date();intervalo=setInterval(()=>{segundos++;tick();},1000);}
+    function stopTimer(){clearInterval(intervalo);intervalo=null;}
+    function getBlocosCount(){let v=blocosEl.value;if(v.endsWith("s"))v=v.slice(0,-1);return v;}
+
+    dtEl.addEventListener("input",onDTInput);
+    function onDTInput(){
+      const dt=dtEl.value.trim();
+      if(dt.length!==10)return; // exige 10 dígitos
+      dtEl.setAttribute("readonly", true); // bloqueia edição após 10 dígitos
+      segundos=0;etapaAtual=1;stopTimer();inicioEtapa=null;
+      timerEl.textContent="00:00";timerEl.style.color="green";
+      const rec=db[dt];
+      if(rec){
+        blocosEl.value=rec.blocos;
+        for(let i=1;i<=3;i++){
+          if(rec.etapas&&rec.etapas[i]){
+            const et=rec.etapas[i];
+            infoEls[i].innerText=`Início: ${et.start}\nFim: ${et.end}\nTempo: ${formatTime(et.timeSec)}`;
+          } else { infoEls[i].innerText="Aguardando..."; }
+        }
+        for(let i=1;i<=3;i++){
+          if(!(rec.etapas&&rec.etapas[i])){etapaAtual=i;break;}
+          if(i===3)etapaAtual=3;
+        }
+      } else { for(let i=1;i<=3;i++) infoEls[i].innerText="Aguardando..."; }
+      etapaChip.textContent="Etapa "+etapaAtual;
+      iniciar();
+    }
+
+    concluirBtn.addEventListener("click",()=>{
+      const dt=dtEl.value.trim();
+      if(dt.length!==10)return alert("DT deve ter 10 dígitos.");
+      if(!db[dt])db[dt]={dt:dt,blocos:blocosEl.value,etapas:{}};
+      const now=new Date();
+      const end=now.toLocaleTimeString();
+      const start=inicioEtapa?inicioEtapa.toLocaleTimeString():horaEl.value;
+      db[dt].blocos=blocosEl.value;
+      db[dt].etapas[etapaAtual]={timeSec:segundos,start:start,end=end};
+      saveDB();
+      infoEls[etapaAtual].innerText=`Início: ${start}\nFim: ${end}\nTempo: ${formatTime(segundos)}`;
+      stopTimer();
+      if(etapaAtual<3){
+        etapaAtual++;
+        etapaChip.textContent="Etapa "+etapaAtual;
+        dtEl.removeAttribute("readonly"); // libera edição para próxima DT
+      } else {
+        etapaChip.textContent="Concluído";
+        dtEl.removeAttribute("readonly"); // libera após finalizar todas
+      }
+    });
+
+    exportBtn.addEventListener("click",()=>{
+      let rows=[["DT","Blocos","Etapa","Início","Fim","Tempo"]];
+      for(const dt in db){
+        const rec=db[dt];
+        for(let i=1;i<=3;i++){
+          if(rec.etapas&&rec.etapas[i]){
+            const et=rec.etapas[i];
+            rows.push([dt,rec.blocos,i,et.start,et.end,formatTime(et.timeSec)]);
+          }
+        }
+      }
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,"Dados");
+      XLSX.writeFile(wb,"dados.xlsx");
+    });
+  </script>
+</body>
+</html>
