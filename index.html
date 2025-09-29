@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Permanência</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#fff; text-align:center; display:flex; flex-direction:column; min-height:100vh; }
+    header img { width:100%; max-height:200px; object-fit:cover; }
+    h1 { background: linear-gradient(90deg,#ff7e00,#ffae42); color:white; padding:10px; margin:0; font-size:20px; }
+    .container { flex:1; margin:20px auto; padding:15px; max-width:500px; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+    input, select { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:4px; font-size:16px; }
+    .timer { font-size:48px; font-weight:bold; margin:20px 0; color:green; }
+    button { padding:10px 20px; margin:10px 5px; border:none; border-radius:4px; font-size:16px; cursor:pointer; }
+    .btn-concluir { background:linear-gradient(90deg,#ff7e00,#ffae42); color:white; }
+    .btn-exportar { background:#555; color:white; }
+    .btn-limpar { background:#c00; color:white; }
+    .etapas { text-align:left; margin-top:20px; }
+    .etapa { background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px; margin:8px 0; }
+    footer { background:#f1f1f1; padding:10px; font-size:14px; color:#555; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="caf0825f-4978-4c74-8b58-10b4fd1b2f48.jpeg" alt="Caminhão Cebrace">
+    <h1>Controle de Permanência</h1>
+  </header>
+
+  <div class="container">
+    <input type="text" id="dt" placeholder="Digite a DT (10 dígitos)" maxlength="10">
+    <input type="text" id="data" placeholder="Data (atual)" readonly>
+    <input type="text" id="hora" placeholder="Hora (atual)" readonly>
+
+    <select id="blocos">
+      <option>01 Bloco (Truck)</option>
+      <option>02 Blocos (Carreta)</option>
+      <option>03 Blocos (Carreta)</option>
+      <option>01 Bloco (Sider)</option>
+      <option>02 Blocos (Sider)</option>
+      <option>03 Blocos (Sider)</option>
+    </select>
+
+    <h2 id="tituloEtapa">Etapa 1 — Descarregamento MCE</h2>
+    <div class="timer" id="timer">00:00</div>
+
+    <button class="btn-concluir" onclick="concluirEtapa()">Encerrar Etapa</button>
+    <button class="btn-exportar" onclick="exportarExcel()">Exportar para Excel</button>
+    <button class="btn-limpar" onclick="limparBanco()">Limpar Banco de Dados</button>
+
+    <div class="etapas" id="etapas">
+      <div class="etapa">1ª Etapa — Descarregamento MCE<br><span id="etapa1">Aguardando...</span></div>
+      <div class="etapa">2ª Etapa — Carregamento<br><span id="etapa2">Aguardando...</span></div>
+      <div class="etapa">3ª Etapa — Enlonamento<br><span id="etapa3">Aguardando...</span></div>
+    </div>
+  </div>
+
+  <footer>Cebrace - Controle de Permanência</footer>
+
+  <script>
+    let dados = JSON.parse(localStorage.getItem("dados")) || {};
+
+    function limparBanco(){
+      if(confirm("Tem certeza que deseja apagar todos os registros?")){
+        localStorage.removeItem("dados");
+        alert("Banco de dados limpo com sucesso!");
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>
