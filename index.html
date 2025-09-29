@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Permanência</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#fff; text-align:center; display:flex; flex-direction:column; min-height:100vh; }
+    header img { width:100%; max-height:200px; object-fit:cover; }
+    h1 { background: linear-gradient(90deg,#ff7e00,#ffae42); color:white; padding:10px; margin:0; font-size:20px; }
+    .container { flex:1; margin:20px auto; padding:15px; max-width:500px; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+    input, select { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:4px; font-size:16px; }
+    .timer { font-size:48px; font-weight:bold; margin:20px 0; color:green; }
+    button { padding:10px 20px; margin:10px 5px; border:none; border-radius:4px; font-size:16px; cursor:pointer; }
+    .btn-concluir { background:linear-gradient(90deg,#ff7e00,#ffae42); color:white; }
+    .btn-exportar { background:#555; color:white; }
+    .etapas { text-align:left; margin-top:20px; }
+    .etapa { background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px; margin:8px 0; }
+    .status-verde { color:green; font-weight:bold; }
+    .status-vermelho { color:red; font-weight:bold; }
+    #tituloEtapa {
+      font-size: 22px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #ff7e00, #ffae42);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+    footer {
+      background:#f1f1f1;
+      padding:10px;
+      font-size:14px;
+      color:#555;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="caf0825f-4978-4c74-8b58-10b4fd1b2f48.jpeg" alt="Caminhão Cebrace">
+    <h1>Controle de Permanência</h1>
+  </header>
+
+  <div class="container">
+    <input type="text" id="dt" placeholder="Digite a DT (10 dígitos)" maxlength="10">
+    <input type="text" id="data" placeholder="Data (atual)" readonly>
+    <input type="text" id="hora" placeholder="Hora (atual)" readonly>
+
+    <select id="blocos">
+      <option>01 Bloco (Truck)</option>
+      <option>02 Blocos (Carreta)</option>
+      <option>03 Blocos (Carreta)</option>
+      <option>01 Bloco (Sider)</option>
+      <option>02 Blocos (Sider)</option>
+      <option>03 Blocos (Sider)</option>
+    </select>
+
+    <h2 id="tituloEtapa">Etapa 1 — Descarregamento MCE</h2>
+    <div class="timer" id="timer">00:00</div>
+
+    <button class="btn-concluir" onclick="concluirEtapa()">Encerrar Etapa</button>
+    <button class="btn-exportar" onclick="exportarExcel()">Exportar para Excel</button>
+
+    <div class="etapas" id="etapas">
+      <div class="etapa">1ª Etapa — Descarregamento MCE<br><span id="etapa1">Aguardando...</span></div>
+      <div class="etapa">2ª Etapa — Carregamento<br><span id="etapa2">Aguardando...</span></div>
+      <div class="etapa">3ª Etapa — Enlonamento<br><span id="etapa3">Aguardando...</span></div>
+    </div>
+  </div>
+
+  <footer>
+    Cebrace - Controle de Permanência
+  </footer>
+
+  <script>
+    let timer;
+    let seconds = 0;
+    let etapaAtual = 1;
+    let dados = JSON.parse(localStorage.getItem("dados")) || {};
+    let inicioEtapaHora = null;
+    let inicioData = null;
+
+    const limites = [5,20,32]; // minutos base por etapa
+
+    function updateDateTime() {
+      const now = new Date();
+      document.getElementById("data").value = now.toLocaleDateString();
+      document.getElementById("hora").value = now.toLocaleTimeString();
+    }
+    setInterval(updateDateTime,1000);
+    updateDateTime();
+
+    function startTimer() {
+      if (timer) return;
+      inicioEtapaHora = new Date().toLocaleTimeString();
+      inicioData = new Date().toLocaleDateString();
+      timer = setInterval(()=>{
+        seconds++;
+        const min = String(Math.floor(seconds/60)).padStart(2,'0');
+        const sec = String(seconds%60).padStart(2,'0');
+        document.getElementById("timer").innerText = `${min}:${sec}`;
+        verificarLimite();
+      },1000);
+    }
+
+    function verificarLimite() {
+      const blocos = document.getElementById("blocos").selectedIndex+1;
+      const limite = limites[etapaAtual-1]*blocos*60;
+      if (seconds > limite) document.getElementById("timer").style.color="red";
+      else document.getElementById("timer").style.color="green";
+    }
+
+    document.getElementById("dt").addEventListener("input",function(){
+      if (this.value.length===10){
+        this.readOnly=true;
+        if(dados[this.value]){
+          for(let i=1;i<=3;i++){
+            if(dados[this.value][`etapa${i}`]){
+              document.getElementById(`etapa${i}`).innerText =
+                `Data: ${dados[this.value][`etapa${i}`].data} | Início: ${dados[this.value][`etapa${i}`].inicio} | Fim: ${dados[this.value][`etapa${i}`].fim} | Tempo: ${dados[this.value][`etapa${i}`].tempo} | ${dados[this.value][`etapa${i}`].status}`;
+              etapaAtual=i+1;
+            }
+          }
+        }
+        if(etapaAtual<=3){
+          atualizarTitulo();
+          startTimer();
+        } else {
+          document.getElementById("tituloEtapa").innerText="Todas as etapas concluídas";
+        }
+      }
+    });
+
+    function atualizarTitulo(){
+      const titulos=["Etapa 1 — Descarregamento MCE","Etapa 2 — Carregamento","Etapa 3 — Enlonamento"];
+      document.getElementById("tituloEtapa").innerText=titulos[etapaAtual-1];
+    }
+
+    function concluirEtapa(){
+      const dt=document.getElementById("dt").value;
+      if(dt.length!==10){
+        alert("Digite a DT (10 dígitos) antes de encerrar a etapa.");
+        return;
+      }
+      clearInterval(timer);
+      timer=null;
+      const fimHora=new Date().toLocaleTimeString();
+      const tempo=document.getElementById("timer").innerText;
+      const status=document.getElementById("timer").style.color==="red"?"❌ Fora do prazo":"✅ Dentro do prazo";
+      if(!dados[dt]) dados[dt]={};
+      dados[dt][`etapa${etapaAtual}`]={data:inicioData,inicio:inicioEtapaHora,fim:fimHora,tempo:tempo,status:status};
+      localStorage.setItem("dados",JSON.stringify(dados));
+      document.getElementById(`etapa${etapaAtual}`).innerText=`Data: ${inicioData} | Início: ${inicioEtapaHora} | Fim: ${fimHora} | Tempo: ${tempo} | ${status}`;
+      seconds=0;
+      document.getElementById("timer").innerText="00:00";
+      if(etapaAtual<3){
+        etapaAtual++;
+        atualizarTitulo();
+      } else {
+        document.getElementById("tituloEtapa").innerText="Todas as etapas concluídas";
+      }
+    }
+
+    function exportarExcel(){
+      let csv="DT,Etapa,Data,Início,Fim,Tempo,Status\n";
+      for(let dt in dados){
+        for(let etapa in dados[dt]){
+          const d=dados[dt][etapa];
+          csv+=`${dt},${etapa},${d.data},${d.inicio},${d.fim},${d.tempo},${d.status}\n`;
+        }
+      }
+      const blob=new Blob([csv],{type:"text/csv"});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download="dados.csv";
+      a.click();
+    }
+  </script>
+</body>
+</html>
